@@ -1,6 +1,9 @@
 /**
- * 
+ * Plan: implement map interface with a BST
  */
+// why is hashmap not always the way to go? 
+// ---> Sometimes hashing can be slow
+// ---> The keys in a hashmap aren't stored in any particular order, and sometimes we want them to be
 package com.flatironschool.javacs;
 
 import java.util.Collection;
@@ -58,7 +61,7 @@ public class MyTreeMap<K, V> implements Map<K, V> {
 
 	/**
 	 * Returns the entry that contains the target key, or null if there is none. 
-	 * 
+	 * (note that target key is not allowed to be null)
 	 * @param target
 	 */
 	private Node findNode(Object target) {
@@ -70,10 +73,21 @@ public class MyTreeMap<K, V> implements Map<K, V> {
 		// something to make the compiler happy
 		@SuppressWarnings("unchecked")
 		Comparable<? super K> k = (Comparable<? super K>) target;
-		
+
+		Node currentNode = root;
+		// while there's tree left to search and we still haven't found it, keep searching
+		while (currentNode != null && !(k.compareTo(currentNode.key) == 0)){
+			if (k.compareTo(currentNode.key) < 0){ 
+				currentNode = currentNode.left; // if targ is smaller than currentNode, move left
+			}
+			else {
+				currentNode = currentNode.right; // if targ is larger than currentNode, move right
+			}
+		}
+		return currentNode;
 		// the actual search
         // TODO: Fill this in.
-        return null;
+        //return findNodeHelper(root, k);
 	}
 
 	/**
@@ -90,9 +104,19 @@ public class MyTreeMap<K, V> implements Map<K, V> {
 		return target.equals(obj);
 	}
 
+	// search entire tree to find out whether or not certain value is in it
 	@Override
 	public boolean containsValue(Object target) {
-		return false;
+		boolean valFound = false;
+		return containsValueHelper(target, root);
+	}
+
+	private boolean containsValueHelper(Object target, Node n){
+		boolean valFound = false;
+		if (!(n == null)){
+			valFound = equals(n.value, target) || containsValueHelper(target, n.left) || containsValueHelper(target, n.right);
+		}
+		return valFound;
 	}
 
 	@Override
@@ -117,7 +141,24 @@ public class MyTreeMap<K, V> implements Map<K, V> {
 	@Override
 	public Set<K> keySet() {
 		Set<K> set = new LinkedHashSet<K>();
-        // TODO: Fill this in.
+		set = keySetHelper(root);
+		return set;
+	}
+
+	// returns the in-order traversal of the subtree rooted at n
+	public LinkedHashSet<K> keySetHelper(Node n) {
+		LinkedHashSet<K> set = new LinkedHashSet<K>();
+		if (n != null){
+			LinkedHashSet<K> left = keySetHelper(n.left);
+			LinkedHashSet<K> right = keySetHelper(n.right);
+			for (K k : left){
+				set.add(k);
+			}
+			set.add(n.key);
+			for (K k : right){
+				set.add(k);
+			}
+		}
 		return set;
 	}
 
@@ -134,9 +175,41 @@ public class MyTreeMap<K, V> implements Map<K, V> {
 		return putHelper(root, key, value);
 	}
 
+	// if key is already in the tree, replaces the old value with the new and returns the old
+	// if key is not in the tree, creates a new (key, value) node and adds it to the right place
 	private V putHelper(Node node, K key, V value) {
-        // TODO: Fill this in.
-        return null;
+		// something to make the compiler happy
+		@SuppressWarnings("unchecked")
+		Comparable<? super K> k = (Comparable<? super K>) key;
+
+		V oldValue = null;
+
+		if (equals(node.key, k)){
+			oldValue = node.value;
+			node.value = value; // if found the right key, update its value
+		}
+		else { 
+			if (k.compareTo(node.key) < 0){ // if k is less, add on left
+				if (node.left == null){
+					node.left = new Node(key, value); // if the appropriate space is empty, add it!
+					size++;
+				} // end if
+				else {
+					oldValue = putHelper(node.left, key, value);
+
+				} // end else
+			}
+			else{ // if k is greater, add on right
+				if (node.right == null){
+					node.right = new Node(key, value); // if the appropriate space is empty, add it!
+					size++;
+				} // end if
+				else {
+					oldValue = putHelper(node.right, key, value);
+				} // end else
+			} // end else
+		} // end else
+        return oldValue;
 	}
 
 	@Override
